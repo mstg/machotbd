@@ -1,8 +1,8 @@
 /*
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
-* @Last Modified by:   mustafa
-* @Last Modified time: 2016-03-29 23:41:57
+* @Last Modified by:   mstg
+* @Last Modified time: 2016-03-29 23:55:26
 */
 
 package tbd
@@ -45,13 +45,40 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
 
   for _, v := range list.Archs {
     buffer.WriteString(fmt.Sprintf("  - archs: [ %s ]\n", v.Name))
-    buffer.WriteString("  symbols: [ ")
-    for a, b := range v.Symbols {
-      buffer.WriteString(b)
-      if len(v.Symbols)-1 != a {
-        buffer.WriteString(",")
-      } else {
-        buffer.WriteString(" ]\n")
+
+    if len(v.Symbols) > 0 {
+      buffer.WriteString("  symbols: [ ")
+      for a, b := range v.Symbols {
+        buffer.WriteString(b)
+        if len(v.Symbols)-1 != a {
+          buffer.WriteString(",")
+        } else {
+          buffer.WriteString(" ]\n")
+        }
+      }
+    }
+
+    if len(v.Classes) > 0 {
+      buffer.WriteString("  objc-classes: [ ")
+      for a, b := range v.Classes {
+        buffer.WriteString(b)
+        if len(v.Classes)-1 != a {
+          buffer.WriteString(",")
+        } else {
+          buffer.WriteString(" ]\n")
+        }
+      }
+    }
+
+    if len(v.Ivars) > 0 {
+      buffer.WriteString("  objc-ivars: [ ")
+      for a, b := range v.Ivars {
+        buffer.WriteString(b)
+        if len(v.Ivars)-1 != a {
+          buffer.WriteString(",")
+        } else {
+          buffer.WriteString(" ]\n")
+        }
       }
     }
   }
