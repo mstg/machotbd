@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-29 23:55:26
+* @Last Modified time: 2016-03-30 00:09:18
 */
 
 package tbd
@@ -47,7 +47,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     buffer.WriteString(fmt.Sprintf("  - archs: [ %s ]\n", v.Name))
 
     if len(v.Symbols) > 0 {
-      buffer.WriteString("  symbols: [ ")
+      buffer.WriteString("    symbols: [ ")
       for a, b := range v.Symbols {
         buffer.WriteString(b)
         if len(v.Symbols)-1 != a {
@@ -59,7 +59,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     }
 
     if len(v.Classes) > 0 {
-      buffer.WriteString("  objc-classes: [ ")
+      buffer.WriteString("    objc-classes: [ ")
       for a, b := range v.Classes {
         buffer.WriteString(b)
         if len(v.Classes)-1 != a {
@@ -71,7 +71,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     }
 
     if len(v.Ivars) > 0 {
-      buffer.WriteString("  objc-ivars: [ ")
+      buffer.WriteString("    objc-ivars: [ ")
       for a, b := range v.Ivars {
         buffer.WriteString(b)
         if len(v.Ivars)-1 != a {

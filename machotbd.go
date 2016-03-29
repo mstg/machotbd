@@ -1,8 +1,8 @@
 /*
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
-* @Last Modified by:   mustafa
-* @Last Modified time: 2016-03-29 23:42:27
+* @Last Modified by:   mstg
+* @Last Modified time: 2016-03-30 00:07:24
 */
 
 package main
@@ -149,7 +149,48 @@ func macho_tbd(c *cli.Context) {
   }
 
   _buf := tbd.Tbd_form(_list)
-  println(_buf.String())
+
+  printit := 0
+  if c.Int("print") == 1 && c.String("o") == ""{
+    println(_buf.String())
+  } else if c.String("o") != "" {
+    _, err := os.Stat(c.String("o"))
+
+    if os.IsNotExist(err) {
+      var file, err = os.Create(c.String("o"))
+      if err != nil {
+        printit = 1
+      } else {
+        defer file.Close()
+      }
+    }
+
+    file, err := os.OpenFile(c.String("o"), os.O_RDWR, 0644)
+
+    if err != nil {
+      printit = 1
+    } else {
+      defer file.Close()
+    }
+
+    _, err = file.WriteString(_buf.String())
+
+    if err != nil {
+      printit = 1
+    } else {
+      err = file.Sync()
+      if err != nil {
+        printit = 1
+      }
+    }
+  }
+
+  if printit == 1 {
+    stderr.Println("An error occured during I/O, printing to stdout")
+    println(_buf.String())
+  } else {
+    stdout.Println("Wrote to", c.String("o"))
+  }
 }
 
 func main() {
