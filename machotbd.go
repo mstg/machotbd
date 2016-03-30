@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 04:07:49
+* @Last Modified time: 2016-03-30 04:36:36
 */
 
 package main
@@ -92,6 +92,7 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
   real_symbols := []string{}
   real_classes := []string{}
   real_ivars := []string{}
+  real_weak := []string{}
   for _, v := range symtab.Syms {
     if v.Type & N_TYPE == N_SECT {
       if v.Name != "" {
@@ -106,6 +107,8 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
           // We don't want any Objc methods
           if !strings.Contains(v.Name, "[") && !strings.Contains(v.Name, ":") && v.Type != 14 {
             real_symbols = append(real_symbols, v.Name)
+          } else if !strings.Contains(v.Name, "[") && !strings.Contains(v.Name, ":") && v.Type == 14 {
+            real_weak = append(real_weak, v.Name)
           }
         }
       }
@@ -140,7 +143,7 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
     }
   }
 
-  _syms = tbd.Arch{Name: cput, Symbols: real_symbols, Classes: real_classes, Ivars: real_ivars}
+  _syms = tbd.Arch{Name: cput, Symbols: real_symbols, Classes: real_classes, Ivars: real_ivars, Weak: real_weak}
   return _syms, []string{version, path}, nil
 }
 

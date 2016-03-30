@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 04:26:47
+* @Last Modified time: 2016-03-30 04:43:43
 */
 
 package tbd
@@ -17,6 +17,7 @@ type Arch struct {
   Symbols []string
   Classes []string
   Ivars []string
+  Weak []string
 }
 
 type Tbd_list struct {
@@ -47,14 +48,39 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
   for _, v := range list.Archs {
     buffer.WriteString(fmt.Sprintf("  - archs: [ %s ]\n", v.Name))
 
+    if len(v.Weak) > 0 {
+      buffer.WriteString("    weak-def-symbols: [ ")
+      amount := 0
+      for a, b := range v.Weak {
+        amount++
+
+        if amount >= 2 {
+          buffer.WriteString(fmt.Sprintf("                        %s", b))
+          amount = 0
+        } else {
+          buffer.WriteString(b)
+        }
+
+        if len(v.Weak)-1 != a {
+          if amount == 1 {
+            buffer.WriteString(",\n")
+          } else {
+            buffer.WriteString(",")
+          }
+        } else {
+          buffer.WriteString(" ]\n")
+        }
+      }
+    }
+
     if len(v.Symbols) > 0 {
-      buffer.WriteString("    objc-classes: [ ")
+      buffer.WriteString("    symbols:          [ ")
       amount := 0
       for a, b := range v.Symbols {
         amount++
 
         if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                    %s", b))
+          buffer.WriteString(fmt.Sprintf("                        %s", b))
           amount = 0
         } else {
           buffer.WriteString(b)
@@ -73,13 +99,13 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     }
 
     if len(v.Classes) > 0 {
-      buffer.WriteString("    objc-classes: [ ")
+      buffer.WriteString("    objc-classes:     [ ")
       amount := 0
       for a, b := range v.Classes {
         amount++
 
         if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                    %s", b))
+          buffer.WriteString(fmt.Sprintf("                        %s", b))
           amount = 0
         } else {
           buffer.WriteString(b)
@@ -98,13 +124,13 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     }
 
     if len(v.Ivars) > 0 {
-      buffer.WriteString("    objc-ivars: [ ")
+      buffer.WriteString("    objc-ivars:       [ ")
       amount := 0
       for a, b := range v.Ivars {
         amount++
 
         if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                    %s", b))
+          buffer.WriteString(fmt.Sprintf("                        %s", b))
           amount = 0
         } else {
           buffer.WriteString(b)
