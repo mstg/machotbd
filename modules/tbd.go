@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 04:43:43
+* @Last Modified time: 2016-03-30 05:00:33
 */
 
 package tbd
@@ -29,27 +29,27 @@ type Tbd_list struct {
 func Tbd_form(list Tbd_list) (bytes.Buffer) {
   var buffer bytes.Buffer
   buffer.WriteString("---\n")
-  buffer.WriteString("archs: [ ")
+  buffer.WriteString("archs:           [ ")
 
   for i, v := range list.Archs {
     buffer.WriteString(v.Name)
     if len(list.Archs)-1 != i {
-      buffer.WriteString(",")
+      buffer.WriteString(", ")
     } else {
       buffer.WriteString(" ]\n")
     }
   }
 
-  buffer.WriteString("platform: ios\n")
-  buffer.WriteString(fmt.Sprintf("install-name: %s\n", list.Install_name))
+  buffer.WriteString("platform:        ios\n")
+  buffer.WriteString(fmt.Sprintf("install-name:    %s\n", list.Install_name))
   buffer.WriteString(fmt.Sprintf("current-version: %s\n", list.Version))
   buffer.WriteString("exports:\n")
 
   for _, v := range list.Archs {
-    buffer.WriteString(fmt.Sprintf("  - archs: [ %s ]\n", v.Name))
+    buffer.WriteString(fmt.Sprintf("  - archs:            [ %s ]\n", v.Name))
 
     if len(v.Weak) > 0 {
-      buffer.WriteString("    weak-def-symbols: [ ")
+      buffer.WriteString("    weak-def-symbols:  [ ")
       amount := 0
       for a, b := range v.Weak {
         amount++
@@ -65,7 +65,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
           if amount == 1 {
             buffer.WriteString(",\n")
           } else {
-            buffer.WriteString(",")
+            buffer.WriteString(", ")
           }
         } else {
           buffer.WriteString(" ]\n")
@@ -90,7 +90,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
           if amount >= 1 {
             buffer.WriteString(",\n")
           } else {
-            buffer.WriteString(",")
+            buffer.WriteString(", ")
           }
         } else {
           buffer.WriteString(" ]\n")
@@ -115,7 +115,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
           if amount >= 1 {
             buffer.WriteString(",\n")
           } else {
-            buffer.WriteString(",")
+            buffer.WriteString(", ")
           }
         } else {
           buffer.WriteString(" ]\n")
@@ -140,7 +140,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
           if amount == 1 {
             buffer.WriteString(",\n")
           } else {
-            buffer.WriteString(",")
+            buffer.WriteString(", ")
           }
         } else {
           buffer.WriteString(" ]\n")

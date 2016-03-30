@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 04:36:36
+* @Last Modified time: 2016-03-30 05:00:12
 */
 
 package main
@@ -79,6 +79,10 @@ func cpu_type(cpu macho.Cpu) (string) {
 func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arch, []string, error) {
   mt := magic_type(f.Magic)
   cput := cpu_type(f.Cpu)
+
+  if cput == "armv7" && f.SubCpu == 11 {
+    cput = "armv7s"
+  }
 
   var _syms tbd.Arch
 
@@ -203,14 +207,6 @@ func macho_tbd(c *cli.Context) {
       _list = tbd.Tbd_list{Archs: arch_arr}
       _list.Install_name = info[1]
       _list.Version = info[0]
-    }
-  }
-
-  armv7s := false
-  for i, v := range _list.Archs {
-    if v.Name == "armv7" && !armv7s {
-      _list.Archs[i].Name = "armv7s"
-      armv7s = true
     }
   }
 
