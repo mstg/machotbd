@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 05:00:12
+* @Last Modified time: 2016-03-30 05:23:57
 */
 
 package main
@@ -18,6 +18,7 @@ import (
   "encoding/binary"
   "bytes"
   "fmt"
+  "sort"
 )
 
 const (
@@ -29,6 +30,7 @@ const (
   LoadDylibIdCmd = 0xd
   fileHeaderSize32 = 7 * 4
   fileHeaderSize64 = 8 * 4
+  ReExportDylibCmd = (0x1f | 0x80000000)
 )
 
 type DylibIdCmd_ struct {
@@ -38,6 +40,18 @@ type DylibIdCmd_ struct {
   Time uint32
   CurrentVersion uint32
   CompatVersion uint32
+}
+
+type ByLength []string
+
+func (s ByLength) Len() int {
+  return len(s)
+}
+func (s ByLength) Swap(i, j int) {
+  s[i], s[j] = s[j], s[i]
+}
+func (s ByLength) Less(i, j int) bool {
+  return len(s[i]) > len(s[j])
 }
 
 
@@ -120,7 +134,9 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
   }
 
   version := "275.0"
+  compatibility_version := ""
   path := ""
+  real_reexports := []string{}
 
   bo := f.ByteOrder
   offset := int64(fileHeaderSize32)
@@ -143,12 +159,26 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
       }
       path = cstring(cmddat[hdr.Name:])
       version = ver(hdr.CurrentVersion)
+      compatibility_version = ver(hdr.CompatVersion)
+      break
+    case ReExportDylibCmd:
+      var hdr DylibIdCmd_
+      b := bytes.NewReader(cmddat)
+      if err := binary.Read(b, bo, &hdr); err != nil {
+        break
+      }
+      path = cstring(cmddat[hdr.Name:])
+      real_reexports = append(real_reexports, path)
       break
     }
   }
 
-  _syms = tbd.Arch{Name: cput, Symbols: real_symbols, Classes: real_classes, Ivars: real_ivars, Weak: real_weak}
-  return _syms, []string{version, path}, nil
+  if len(real_reexports) > 0 {
+    sort.Sort(ByLength(real_reexports))
+  }
+
+  _syms = tbd.Arch{Name: cput, Symbols: real_symbols, Classes: real_classes, Ivars: real_ivars, Weak: real_weak, ReExports: real_reexports}
+  return _syms, []string{version, path, compatibility_version}, nil
 }
 
 func parse_fat(f *macho.FatFile, stdout *log.Logger, stderr *log.Logger) (tbd.Tbd_list) {
@@ -161,6 +191,7 @@ func parse_fat(f *macho.FatFile, stdout *log.Logger, stderr *log.Logger) (tbd.Tb
       _ret_sym.Archs = append(_ret_sym.Archs, _ret_macho_sym)
       _ret_sym.Install_name = info[1]
       _ret_sym.Version = info[0]
+      _ret_sym.CompVersion = info[2]
     }
   }
 
@@ -207,13 +238,14 @@ func macho_tbd(c *cli.Context) {
       _list = tbd.Tbd_list{Archs: arch_arr}
       _list.Install_name = info[1]
       _list.Version = info[0]
+      _list.CompVersion = info[2]
     }
   }
 
   _buf := tbd.Tbd_form(_list)
 
   printit := 0
-  if c.Int("print") == 1 && c.String("o") == ""{
+  if c.Int("print") == 1 && c.String("o") == "" {
     println(_buf.String())
   } else if c.String("o") != "" {
     _, err := os.Stat(c.String("o"))

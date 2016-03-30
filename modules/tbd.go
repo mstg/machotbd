@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 05:00:33
+* @Last Modified time: 2016-03-30 05:23:33
 */
 
 package tbd
@@ -18,11 +18,13 @@ type Arch struct {
   Classes []string
   Ivars []string
   Weak []string
+  ReExports []string
 }
 
 type Tbd_list struct {
   Install_name string
   Version string
+  CompVersion string
   Archs []Arch
 }
 
@@ -42,11 +44,41 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
 
   buffer.WriteString("platform:        ios\n")
   buffer.WriteString(fmt.Sprintf("install-name:    %s\n", list.Install_name))
+
   buffer.WriteString(fmt.Sprintf("current-version: %s\n", list.Version))
+  if list.CompVersion != "" {
+    buffer.WriteString(fmt.Sprintf("compatibility-version: %s\n", list.CompVersion))
+  }
+
   buffer.WriteString("exports:\n")
 
   for _, v := range list.Archs {
     buffer.WriteString(fmt.Sprintf("  - archs:            [ %s ]\n", v.Name))
+
+    if len(v.ReExports) > 0 {
+      buffer.WriteString("    re-exports:       [ ")
+      amount := 0
+      for a, b := range v.ReExports {
+        amount++
+
+        if amount >= 2 {
+          buffer.WriteString(fmt.Sprintf("                        %s", b))
+          amount = 0
+        } else {
+          buffer.WriteString(b)
+        }
+
+        if len(v.ReExports)-1 != a {
+          if amount == 1 {
+            buffer.WriteString(",\n")
+          } else {
+            buffer.WriteString(", ")
+          }
+        } else {
+          buffer.WriteString(" ]\n")
+        }
+      }
+    }
 
     if len(v.Weak) > 0 {
       buffer.WriteString("    weak-def-symbols:  [ ")
