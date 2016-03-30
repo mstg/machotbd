@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 05:23:57
+* @Last Modified time: 2016-03-30 05:32:57
 */
 
 package main
@@ -176,6 +176,12 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
   if len(real_reexports) > 0 {
     sort.Sort(ByLength(real_reexports))
   }
+
+  sort.Strings(real_weak)
+  sort.Strings(real_symbols)
+  sort.Strings(real_classes)
+  sort.Strings(real_ivars)
+
 
   _syms = tbd.Arch{Name: cput, Symbols: real_symbols, Classes: real_classes, Ivars: real_ivars, Weak: real_weak, ReExports: real_reexports}
   return _syms, []string{version, path, compatibility_version}, nil
