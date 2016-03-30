@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 00:07:24
+* @Last Modified time: 2016-03-30 03:19:54
 */
 
 package main
@@ -15,6 +15,9 @@ import (
   "github.com/mstg/machotbd/modules"
   "errors"
   "strings"
+  "encoding/binary"
+  "bytes"
+  "fmt"
 )
 
 const (
@@ -23,7 +26,31 @@ const (
   // From <mach-o/nlist.h>
   N_TYPE uint8 = 0x0e
   N_SECT uint8 = 0xe
+  LoadDylibIdCmd = 0xd
+  fileHeaderSize32 = 7 * 4
+  fileHeaderSize64 = 8 * 4
 )
+
+type DylibIdCmd_ struct {
+  Cmd macho.LoadCmd
+  Len uint32
+  Name uint32
+  Time uint32
+  CurrentVersion uint32
+  CompatVersion uint32
+}
+
+
+func cstring(b []byte) string {
+  var i int
+  for i = 0; i < len(b) && b[i] != 0; i++ {
+  }
+  return string(b[0:i])
+}
+
+func ver(raw_ver uint32) string {
+  return fmt.Sprintf("%d.%d.%d", raw_ver >> 16, (raw_ver >> 8) & 0xff, raw_ver & 0xff)
+}
 
 func magic_type(magic uint32) (uint32) {
   if magic == macho.Magic32 {
@@ -49,14 +76,14 @@ func cpu_type(cpu macho.Cpu) (string) {
   return "uns"
 }
 
-func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arch, error) {
+func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arch, []string, error) {
   mt := magic_type(f.Magic)
   cput := cpu_type(f.Cpu)
 
   var _syms tbd.Arch
 
   if cput == "uns" {
-    return _syms, errors.New("Unsupported arch")
+    return _syms, []string{}, errors.New("Unsupported arch")
   }
 
   stdout.Println(mt, "bit", cput, "slice")
@@ -69,18 +96,52 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
     if v.Type & N_TYPE == N_SECT {
       if v.Name != "" {
         if strings.Contains(v.Name, "_OBJC_CLASS") {
-          real_classes = append(real_classes, v.Name)
+          real_name := strings.Replace(v.Name, "_OBJC_CLASS_$_", "", -1)
+          real_classes = append(real_classes, real_name)
         } else if strings.Contains(v.Name, "_OBJC_IVAR") {
-          real_ivars = append(real_ivars, v.Name)
+          real_name := strings.Replace(v.Name, "_OBJC_IVAR_$_", "", -1)
+          real_ivars = append(real_ivars, real_name)
+        } else if strings.Contains(v.Name, "_OBJC_METACLASS") {
         } else {
-          real_symbols = append(real_symbols, v.Name)
+          // We don't want any Objc methods
+          if !strings.Contains(v.Name, "[") && !strings.Contains(v.Name, ":") {
+            real_symbols = append(real_symbols, v.Name)
+          }
         }
       }
     }
   }
 
+  version := "275.0"
+  path := ""
+
+  bo := f.ByteOrder
+  offset := int64(fileHeaderSize32)
+  if f.Magic == macho.Magic64 {
+    offset = fileHeaderSize64
+  }
+  for _, v := range f.Loads {
+    dat := v.Raw()
+    cmd, siz := uint32(bo.Uint32(dat[0:4])), bo.Uint32(dat[4:8])
+    var cmddat []byte
+    cmddat, dat = dat[0:siz], dat[siz:]
+    offset += int64(siz)
+    
+    switch cmd {
+    case LoadDylibIdCmd:
+      var hdr DylibIdCmd_
+      b := bytes.NewReader(cmddat)
+      if err := binary.Read(b, bo, &hdr); err != nil {
+        break
+      }
+      path = cstring(cmddat[hdr.Name:])
+      version = ver(hdr.CurrentVersion)
+      break
+    }
+  }
+
   _syms = tbd.Arch{Name: cput, Symbols: real_symbols, Classes: real_classes, Ivars: real_ivars}
-  return _syms, nil
+  return _syms, []string{version, path}, nil
 }
 
 func parse_fat(f *macho.FatFile, stdout *log.Logger, stderr *log.Logger) (tbd.Tbd_list) {
@@ -88,9 +149,11 @@ func parse_fat(f *macho.FatFile, stdout *log.Logger, stderr *log.Logger) (tbd.Tb
 
   _ret_sym := tbd.Tbd_list{}
   for _, v := range f.Arches {
-    _ret_macho_sym, err := parse_macho(v.File, stdout, stderr)
+    _ret_macho_sym, info, err := parse_macho(v.File, stdout, stderr)
     if err == nil {
       _ret_sym.Archs = append(_ret_sym.Archs, _ret_macho_sym)
+      _ret_sym.Install_name = info[1]
+      _ret_sym.Version = info[0]
     }
   }
 
@@ -129,16 +192,16 @@ func macho_tbd(c *cli.Context) {
   if universal {
     _list = parse_fat(macho_fat_file, stdout, stderr)
 
-    stdout.Println(len(_list.Archs))
+    stdout.Println("Arch count:", len(_list.Archs))
   } else {
-    _unpreplist, err := parse_macho(macho_file, stdout, stderr)
+    _unpreplist, info, err := parse_macho(macho_file, stdout, stderr)
     if err == nil {
       arch_arr := []tbd.Arch{_unpreplist}
       _list = tbd.Tbd_list{Archs: arch_arr}
+      _list.Install_name = info[1]
+      _list.Version = info[0]
     }
   }
-
-  _list.Install_name = file
 
   armv7s := false
   for i, v := range _list.Archs {
@@ -188,7 +251,7 @@ func macho_tbd(c *cli.Context) {
   if printit == 1 {
     stderr.Println("An error occured during I/O, printing to stdout")
     println(_buf.String())
-  } else {
+  } else if c.String("o") != "" {
     stdout.Println("Wrote to", c.String("o"))
   }
 }
