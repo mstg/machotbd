@@ -8,7 +8,6 @@
 package main
 
 import (
-  "github.com/codegangsta/cli"
   "os"
   "log"
   "debug/macho"
@@ -19,6 +18,7 @@ import (
   "bytes"
   "fmt"
   "sort"
+  "flag"
 )
 
 const (
@@ -27,6 +27,7 @@ const (
   // From <mach-o/nlist.h>
   N_TYPE uint8 = 0x0e
   N_SECT uint8 = 0xe
+  N_EXT uint8 = 0x01
   LoadDylibIdCmd = 0xd
   fileHeaderSize32 = 7 * 4
   fileHeaderSize64 = 8 * 4
@@ -112,7 +113,7 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
   real_ivars := []string{}
   real_weak := []string{}
   for _, v := range symtab.Syms {
-    if v.Type & N_TYPE == N_SECT {
+    if v.Type & N_TYPE == N_SECT && v.Type & N_EXT == N_EXT {
       if v.Name != "" {
         if strings.Contains(v.Name, "_OBJC_CLASS") {
           real_name := strings.Replace(v.Name, "_OBJC_CLASS_$_", "", -1)
@@ -122,10 +123,10 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
           real_ivars = append(real_ivars, real_name)
         } else if strings.Contains(v.Name, "_OBJC_METACLASS") {
         } else {
-          // We don't want any Objc methods
-          if !strings.Contains(v.Name, "[") && !strings.Contains(v.Name, ":") && v.Type != 14 {
+          // Sort weak and strong symbols
+          if v.Type & N_SECT == N_SECT {
             real_symbols = append(real_symbols, v.Name)
-          } else if !strings.Contains(v.Name, "[") && !strings.Contains(v.Name, ":") && v.Type == 14 {
+          } else if v.Type & N_SECT != N_SECT {
             real_weak = append(real_weak, v.Name)
           }
         }
@@ -149,7 +150,7 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
     var cmddat []byte
     cmddat, dat = dat[0:siz], dat[siz:]
     offset += int64(siz)
-    
+
     switch cmd {
     case LoadDylibIdCmd:
       var hdr DylibIdCmd_
@@ -204,15 +205,22 @@ func parse_fat(f *macho.FatFile, stdout *log.Logger, stderr *log.Logger) (tbd.Tb
   return _ret_sym
 }
 
-func macho_tbd(c *cli.Context) {
+var out = flag.String("out", "", "path to the file should be exported to")
+var print = flag.Bool("print", true, "print tbd to stdout")
+
+func macho_tbd(args []string) {
   stderr := log.New(os.Stderr, "[?] ", 0)
   stdout := log.New(os.Stdout, "[+] ", 0)
   file := ""
-  if c.NArg() > 0 {
-    file = c.Args()[0]
+  if len(args) > 0 {
+    file = args[0]
   } else {
     stderr.Println("No Mach-O file provided")
     os.Exit(1)
+  }
+
+  if *out != "" {
+    *print = false
   }
 
   macho_file, err := macho.Open(file)
@@ -251,13 +259,13 @@ func macho_tbd(c *cli.Context) {
   _buf := tbd.Tbd_form(_list)
 
   printit := 0
-  if c.Int("print") == 1 && c.String("o") == "" {
+  if *print == true && *out == "" {
     println(_buf.String())
-  } else if c.String("o") != "" {
-    _, err := os.Stat(c.String("o"))
+  } else if *out != "" {
+    _, err := os.Stat(*out)
 
     if os.IsNotExist(err) {
-      var file, err = os.Create(c.String("o"))
+      var file, err = os.Create(*out)
       if err != nil {
         printit = 1
       } else {
@@ -265,7 +273,7 @@ func macho_tbd(c *cli.Context) {
       }
     }
 
-    file, err := os.OpenFile(c.String("o"), os.O_RDWR, 0644)
+    file, err := os.OpenFile(*out, os.O_RDWR, 0644)
 
     if err != nil {
       printit = 1
@@ -288,28 +296,12 @@ func macho_tbd(c *cli.Context) {
   if printit == 1 {
     stderr.Println("An error occured during I/O, printing to stdout")
     println(_buf.String())
-  } else if c.String("o") != "" {
-    stdout.Println("Wrote to", c.String("o"))
+  } else if *out != "" {
+    stdout.Println("Wrote to", *out)
   }
 }
 
 func main() {
-  app := cli.NewApp()
-  app.Name = "machotbd"
-  app.Usage = "dump mach-o symbols to a tbd file"
-  app.Flags = []cli.Flag {
-    cli.IntFlag{
-      Name: "print",
-      Value: 1,
-      Usage: "print symbols to stdout",
-    },
-    cli.StringFlag{
-      Name: "o",
-      Value: "",
-      Usage: "path to the file should be exported to",
-    },
-  }
-  app.Action = macho_tbd
-
-  app.Run(os.Args)
+  flag.Parse()
+  macho_tbd(flag.Args())
 }
