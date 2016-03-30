@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
 * @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 02:44:39
+* @Last Modified time: 2016-03-30 04:26:47
 */
 
 package tbd
@@ -48,11 +48,24 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     buffer.WriteString(fmt.Sprintf("  - archs: [ %s ]\n", v.Name))
 
     if len(v.Symbols) > 0 {
-      buffer.WriteString("    symbols: [ ")
+      buffer.WriteString("    objc-classes: [ ")
+      amount := 0
       for a, b := range v.Symbols {
-        buffer.WriteString(b)
+        amount++
+
+        if amount >= 2 {
+          buffer.WriteString(fmt.Sprintf("                    %s", b))
+          amount = 0
+        } else {
+          buffer.WriteString(b)
+        }
+
         if len(v.Symbols)-1 != a {
-          buffer.WriteString(",")
+          if amount >= 1 {
+            buffer.WriteString(",\n")
+          } else {
+            buffer.WriteString(",")
+          }
         } else {
           buffer.WriteString(" ]\n")
         }
@@ -61,10 +74,23 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
 
     if len(v.Classes) > 0 {
       buffer.WriteString("    objc-classes: [ ")
+      amount := 0
       for a, b := range v.Classes {
-        buffer.WriteString(b)
+        amount++
+
+        if amount >= 2 {
+          buffer.WriteString(fmt.Sprintf("                    %s", b))
+          amount = 0
+        } else {
+          buffer.WriteString(b)
+        }
+
         if len(v.Classes)-1 != a {
-          buffer.WriteString(",")
+          if amount >= 1 {
+            buffer.WriteString(",\n")
+          } else {
+            buffer.WriteString(",")
+          }
         } else {
           buffer.WriteString(" ]\n")
         }
@@ -73,10 +99,23 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
 
     if len(v.Ivars) > 0 {
       buffer.WriteString("    objc-ivars: [ ")
+      amount := 0
       for a, b := range v.Ivars {
-        buffer.WriteString(b)
+        amount++
+
+        if amount >= 2 {
+          buffer.WriteString(fmt.Sprintf("                    %s", b))
+          amount = 0
+        } else {
+          buffer.WriteString(b)
+        }
+
         if len(v.Ivars)-1 != a {
-          buffer.WriteString(",")
+          if amount == 1 {
+            buffer.WriteString(",\n")
+          } else {
+            buffer.WriteString(",")
+          }
         } else {
           buffer.WriteString(" ]\n")
         }
