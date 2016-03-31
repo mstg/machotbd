@@ -79,21 +79,27 @@ func magic_type(magic uint32) (uint32) {
   return 0
 }
 
-func cpu_type(cpu macho.Cpu) (string) {
-  if cpu == macho.CpuAmd64 {
+func cpu_type(f *macho.File) (string) {
+  if f.Cpu == macho.CpuAmd64 {
     return "x86_64"
-  } else if cpu == macho.CpuArm {
+  } else if f.Cpu == macho.CpuArm && f.SubCpu == 6 {
+    return "armv6"
+  } else if f.Cpu == macho.CpuArm && f.SubCpu == 9 {
     return "armv7"
-  } else if cpu == arm64 {
+  } else if f.Cpu == macho.CpuArm && f.SubCpu == 11 {
+    return "armv7s"
+  } else if f.Cpu == arm64 {
     return "arm64"
   }
+
+  println(f.SubCpu)
 
   return "uns"
 }
 
 func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arch, []string, error) {
   mt := magic_type(f.Magic)
-  cput := cpu_type(f.Cpu)
+  cput := cpu_type(f)
 
   if cput == "armv7" && f.SubCpu == 11 {
     cput = "armv7s"
@@ -126,9 +132,9 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
           // Sort weak and strong symbols
           if v.Type & N_SECT == N_SECT {
             real_symbols = append(real_symbols, v.Name)
-          } else if v.Type & N_SECT != N_SECT {
+          }/* else if v.Type & N_SECT != N_SECT {
             real_weak = append(real_weak, v.Name)
-          }
+          }*/ // Disable weak symbol finding until I find a better solution
         }
       }
     }
