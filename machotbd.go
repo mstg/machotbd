@@ -92,8 +92,6 @@ func cpu_type(f *macho.File) (string) {
     return "arm64"
   }
 
-  println(f.SubCpu)
-
   return "uns"
 }
 
@@ -266,7 +264,7 @@ func macho_tbd(args []string) {
 
   printit := 0
   if *print == true && *out == "" {
-    println(_buf.String())
+    stdout.Println(_buf.String())
   } else if *out != "" {
     _, err := os.Stat(*out)
 
@@ -301,7 +299,7 @@ func macho_tbd(args []string) {
 
   if printit == 1 {
     stderr.Println("An error occured during I/O, printing to stdout")
-    println(_buf.String())
+    stdout.Println(_buf.String())
   } else if *out != "" {
     stdout.Println("Wrote to", *out)
   }
