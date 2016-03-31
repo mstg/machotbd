@@ -80,7 +80,9 @@ func magic_type(magic uint32) (uint32) {
 }
 
 func cpu_type(f *macho.File) (string) {
-  if f.Cpu == macho.CpuAmd64 {
+  if f.Cpu == macho.Cpu386 {
+    return "i386"
+  } else if f.Cpu == macho.CpuAmd64 {
     return "x86_64"
   } else if f.Cpu == macho.CpuArm && f.SubCpu == 6 {
     return "armv6"
@@ -98,10 +100,6 @@ func cpu_type(f *macho.File) (string) {
 func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arch, []string, error) {
   mt := magic_type(f.Magic)
   cput := cpu_type(f)
-
-  if cput == "armv7" && f.SubCpu == 11 {
-    cput = "armv7s"
-  }
 
   var _syms tbd.Arch
 
@@ -211,6 +209,7 @@ func parse_fat(f *macho.FatFile, stdout *log.Logger, stderr *log.Logger) (tbd.Tb
 
 var out = flag.String("out", "", "path to the file should be exported to")
 var print = flag.Bool("print", true, "print tbd to stdout")
+var plt = flag.String("platform", "ios", "platform to define in the output tbd")
 
 func macho_tbd(args []string) {
   stderr := log.New(os.Stderr, "[?] ", 0)
@@ -225,6 +224,11 @@ func macho_tbd(args []string) {
 
   if *out != "" {
     *print = false
+  }
+
+  if *plt != "ios" && *plt != "macosx" {
+    stderr.Println("Unsupported platform, only ios and macosx is supported")
+    os.Exit(1)
   }
 
   macho_file, err := macho.Open(file)
@@ -259,6 +263,8 @@ func macho_tbd(args []string) {
       _list.CompVersion = info[2]
     }
   }
+
+  _list.Platform = *plt
 
   _buf := tbd.Tbd_form(_list)
 

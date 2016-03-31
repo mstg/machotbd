@@ -25,6 +25,7 @@ type Tbd_list struct {
   Install_name string
   Version string
   CompVersion string
+  Platform string
   Archs []Arch
 }
 
@@ -42,7 +43,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     }
   }
 
-  buffer.WriteString("platform:        ios\n")
+  buffer.WriteString(fmt.Sprintf("platform:        %s\n", list.Platform))
   buffer.WriteString(fmt.Sprintf("install-name:    %s\n", list.Install_name))
 
   buffer.WriteString(fmt.Sprintf("current-version: %s\n", list.Version))
