@@ -118,10 +118,10 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
     if v.Type & N_TYPE == N_SECT && v.Type & N_EXT == N_EXT {
       if v.Name != "" {
         if strings.Contains(v.Name, "_OBJC_CLASS") {
-          real_name := strings.Replace(v.Name, "_OBJC_CLASS_$_", "", -1)
+          real_name := strings.Replace(v.Name, "_OBJC_CLASS_$", "", -1)
           real_classes = append(real_classes, real_name)
         } else if strings.Contains(v.Name, "_OBJC_IVAR") {
-          real_name := strings.Replace(v.Name, "_OBJC_IVAR_$_", "", -1)
+          real_name := strings.Replace(v.Name, "_OBJC_IVAR_$", "", -1)
           real_ivars = append(real_ivars, real_name)
         } else if strings.Contains(v.Name, "_OBJC_METACLASS") {
         } else {
