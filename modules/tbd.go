@@ -29,6 +29,48 @@ type Tbd_list struct {
   Archs []Arch
 }
 
+type tbd_section struct {
+  arch_n []string
+  arch Arch
+}
+
+func acontains(s []string, a string) (bool, int) {
+  for i, v := range s {
+    if v == a {
+      return true, i
+    }
+  }
+
+  return false, 0
+}
+
+func write_section (buffer *bytes.Buffer, sect []string, sect_def string) {
+  if len(sect) > 0 {
+    buffer.WriteString(sect_def)
+    amount := 0
+    for a, b := range sect {
+      amount++
+
+      if amount >= 2 {
+        buffer.WriteString(fmt.Sprintf("                        %s", b))
+        amount = 0
+      } else {
+        buffer.WriteString(b)
+      }
+
+      if len(sect)-1 != a {
+        if amount == 1 {
+          buffer.WriteString(",\n")
+        } else {
+          buffer.WriteString(", ")
+        }
+      } else {
+        buffer.WriteString(" ]\n")
+      }
+    }
+  }
+}
+
 func Tbd_form(list Tbd_list) (bytes.Buffer) {
   var buffer bytes.Buffer
   buffer.WriteString("---\n")
@@ -53,133 +95,134 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
 
   buffer.WriteString("exports:\n")
 
-  for _, v := range list.Archs {
-    buffer.WriteString(fmt.Sprintf("  - archs:            [ %s ]\n", v.Name))
+  var tbd_sections []tbd_section
 
-    if len(v.ReExports) > 0 {
-      buffer.WriteString("    re-exports:       [ ")
-      amount := 0
-      for a, b := range v.ReExports {
-        amount++
+  for len(list.Archs) > 0 {
+    for i := 0; i < len(list.Archs); i++ {
+      var section tbd_section
+      section.arch = Arch{}
 
-        if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                        %s", b))
-          amount = 0
-        } else {
-          buffer.WriteString(b)
-        }
+      for _, k := range list.Archs[i].Symbols {
+        for b, l := range list.Archs {
+          cont, _a := acontains(l.Symbols, k)
+          if cont {
+            __l, _ := acontains(section.arch.Symbols, k)
+            if !__l {
+              section.arch.Symbols = append(section.arch.Symbols, k)
+            }
 
-        if len(v.ReExports)-1 != a {
-          if amount == 1 {
-            buffer.WriteString(",\n")
-          } else {
-            buffer.WriteString(", ")
+            list.Archs[b].Symbols = append(list.Archs[b].Symbols[:_a], list.Archs[b].Symbols[_a+1:]...)
+
+            cont2, _ := acontains(section.arch_n, l.Name)
+            if !cont2 {
+              section.arch_n = append(section.arch_n, l.Name)
+            }
           }
-        } else {
-          buffer.WriteString(" ]\n")
         }
+      }
+
+      for _, k := range list.Archs[i].Classes {
+        for b, l := range list.Archs {
+          cont, _a := acontains(l.Classes, k)
+          cont2, _ := acontains(section.arch_n, l.Name)
+          if cont {
+            __l, _ := acontains(section.arch.Classes, k)
+            if !__l {
+              section.arch.Classes = append(section.arch.Classes, k)
+            }
+
+            list.Archs[b].Classes = append(list.Archs[b].Classes[:_a], list.Archs[b].Classes[_a+1:]...)
+
+            if !cont2 {
+              section.arch_n = append(section.arch_n, l.Name)
+            }
+          }
+        }
+      }
+
+      for _, k := range list.Archs[i].ReExports {
+        for b, l := range list.Archs {
+          cont, _a := acontains(l.ReExports, k)
+          cont2, _ := acontains(section.arch_n, l.Name)
+          if cont {
+            __l, _ := acontains(section.arch.ReExports, k)
+            if !__l {
+              section.arch.ReExports = append(section.arch.ReExports, k)
+            }
+
+            list.Archs[b].ReExports = append(list.Archs[b].ReExports[:_a], list.Archs[b].ReExports[_a+1:]...)
+
+            if !cont2 {
+              section.arch_n = append(section.arch_n, l.Name)
+            }
+          }
+        }
+
+        for _, k := range list.Archs[i].Weak {
+          for b, l := range list.Archs {
+            cont, _a := acontains(l.Weak, k)
+            cont2, _ := acontains(section.arch_n, l.Name)
+            if cont {
+              __l, _ := acontains(section.arch.Weak, k)
+              if !__l {
+                section.arch.Weak = append(section.arch.Weak, k)
+              }
+
+              list.Archs[b].Weak = append(list.Archs[b].Weak[:_a], list.Archs[b].Weak[_a+1:]...)
+
+              if !cont2 {
+                section.arch_n = append(section.arch_n, l.Name)
+              }
+            }
+          }
+        }
+
+        for _, k := range list.Archs[i].Ivars {
+          for b, l := range list.Archs {
+            cont, _a := acontains(l.Ivars, k)
+            cont2, _ := acontains(section.arch_n, l.Name)
+            if cont {
+              __l, _ := acontains(section.arch.Ivars, k)
+              if !__l {
+                section.arch.Ivars = append(section.arch.Ivars, k)
+              }
+
+              list.Archs[b].Ivars = append(list.Archs[b].Ivars[:_a], list.Archs[b].Ivars[_a+1:]...)
+
+              if !cont2 {
+                section.arch_n = append(section.arch_n, l.Name)
+              }
+            }
+          }
+        }
+      }
+
+      list.Archs = append(list.Archs[:i], list.Archs[i+1:]...)
+
+      if len(section.arch.Symbols) > 0 || len(section.arch.Classes) > 0 ||
+        len(section.arch.ReExports) > 0 || len(section.arch.Weak) > 0 ||
+        len(section.arch.Ivars) > 0 {
+        tbd_sections = append(tbd_sections, section)
+      }
+    }
+  }
+
+  for _, v := range tbd_sections {
+    buffer.WriteString("  - archs:            [ ")
+
+    for b, a := range v.arch_n {
+      if len(v.arch_n)-1 != b {
+        buffer.WriteString(fmt.Sprintf("%s, ", a))
+      } else {
+        buffer.WriteString(fmt.Sprintf("%s ]\n", a))
       }
     }
 
-    if len(v.Weak) > 0 {
-      buffer.WriteString("    weak-def-symbols:  [ ")
-      amount := 0
-      for a, b := range v.Weak {
-        amount++
-
-        if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                        %s", b))
-          amount = 0
-        } else {
-          buffer.WriteString(b)
-        }
-
-        if len(v.Weak)-1 != a {
-          if amount == 1 {
-            buffer.WriteString(",\n")
-          } else {
-            buffer.WriteString(", ")
-          }
-        } else {
-          buffer.WriteString(" ]\n")
-        }
-      }
-    }
-
-    if len(v.Symbols) > 0 {
-      buffer.WriteString("    symbols:          [ ")
-      amount := 0
-      for a, b := range v.Symbols {
-        amount++
-
-        if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                        %s", b))
-          amount = 0
-        } else {
-          buffer.WriteString(b)
-        }
-
-        if len(v.Symbols)-1 != a {
-          if amount >= 1 {
-            buffer.WriteString(",\n")
-          } else {
-            buffer.WriteString(", ")
-          }
-        } else {
-          buffer.WriteString(" ]\n")
-        }
-      }
-    }
-
-    if len(v.Classes) > 0 {
-      buffer.WriteString("    objc-classes:     [ ")
-      amount := 0
-      for a, b := range v.Classes {
-        amount++
-
-        if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                        %s", b))
-          amount = 0
-        } else {
-          buffer.WriteString(b)
-        }
-
-        if len(v.Classes)-1 != a {
-          if amount >= 1 {
-            buffer.WriteString(",\n")
-          } else {
-            buffer.WriteString(", ")
-          }
-        } else {
-          buffer.WriteString(" ]\n")
-        }
-      }
-    }
-
-    if len(v.Ivars) > 0 {
-      buffer.WriteString("    objc-ivars:       [ ")
-      amount := 0
-      for a, b := range v.Ivars {
-        amount++
-
-        if amount >= 2 {
-          buffer.WriteString(fmt.Sprintf("                        %s", b))
-          amount = 0
-        } else {
-          buffer.WriteString(b)
-        }
-
-        if len(v.Ivars)-1 != a {
-          if amount == 1 {
-            buffer.WriteString(",\n")
-          } else {
-            buffer.WriteString(", ")
-          }
-        } else {
-          buffer.WriteString(" ]\n")
-        }
-      }
-    }
+    write_section(&buffer, v.arch.ReExports, "    re-exports:       [ ")
+    write_section(&buffer, v.arch.Weak, "    weak-def-symbols:  [ ")
+    write_section(&buffer, v.arch.Symbols, "    symbols:          [ ")
+    write_section(&buffer, v.arch.Classes, "    objc-classes:     [ ")
+    write_section(&buffer, v.arch.Ivars, "    objc-ivars:       [ ")
   }
 
   buffer.WriteString("...")
