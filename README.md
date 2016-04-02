@@ -10,7 +10,7 @@ mach-o to tbd
 ```
 Usage of machotbd
   -out string
-        path to the file should be exported to
+        path to export tbd to
   -platform string
         platform to define in the output tbd (default "ios")
   -print

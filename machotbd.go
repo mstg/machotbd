@@ -1,8 +1,8 @@
 /*
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
-* @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 05:32:57
+* @Last Modified by:   Mustafa
+* @Last Modified time: 2016-04-02 18:52:42
 */
 
 package main
@@ -136,8 +136,8 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
     }
   }
 
-  version := "275.0"
-  compatibility_version := ""
+  version := "0.0.0"
+  compatibility_version := "0.0.0"
   path := ""
   real_reexports := []string{}
 
@@ -170,8 +170,8 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
       if err := binary.Read(b, bo, &hdr); err != nil {
         break
       }
-      path = cstring(cmddat[hdr.Name:])
-      real_reexports = append(real_reexports, path)
+      path_ := cstring(cmddat[hdr.Name:])
+      real_reexports = append(real_reexports, path_)
       break
     }
   }
@@ -207,7 +207,7 @@ func parse_fat(f *macho.FatFile, stdout *log.Logger, stderr *log.Logger) (tbd.Tb
   return _ret_sym
 }
 
-var out = flag.String("out", "", "path to the file should be exported to")
+var out = flag.String("out", "", "path to export tbd to")
 var print = flag.Bool("print", true, "print tbd to stdout")
 var plt = flag.String("platform", "ios", "platform to define in the output tbd")
 
