@@ -1,8 +1,8 @@
 /*
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
-* @Last Modified by:   mstg
-* @Last Modified time: 2016-03-30 05:23:33
+* @Last Modified by:   Mustafa
+* @Last Modified time: 2016-04-04 05:01:50
 */
 
 package tbd
@@ -10,6 +10,7 @@ package tbd
 import (
   "bytes"
   "fmt"
+  "sort"
 )
 
 type Arch struct {
@@ -32,6 +33,42 @@ type Tbd_list struct {
 type tbd_section struct {
   arch_n []string
   arch Arch
+}
+
+type ByLength []string
+
+func (s ByLength) Len() int {
+  return len(s)
+}
+func (s ByLength) Swap(i, j int) {
+  s[i], s[j] = s[j], s[i]
+}
+func (s ByLength) Less(i, j int) bool {
+  return len(s[i]) > len(s[j])
+}
+
+type sectionSorter struct {
+  sections []tbd_section
+  by func(p1, p2 *tbd_section) bool
+}
+
+type By func(p1, p2 *tbd_section) bool
+
+func (by By) Sort(sections []tbd_section) {
+  ss := &sectionSorter{sections: sections, by: by}
+  sort.Sort(ss)
+}
+
+func (s *sectionSorter) Len() int {
+  return len(s.sections)
+}
+
+func (s *sectionSorter) Swap(i, j int) {
+  s.sections[i], s.sections[j] = s.sections[j], s.sections[i]
+}
+
+func (s *sectionSorter) Less(i, j int) bool {
+  return s.by(&s.sections[i], &s.sections[j])
 }
 
 func acontains(s []string, a string) (bool, int) {
@@ -202,11 +239,23 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
       if len(section.arch.Symbols) > 0 || len(section.arch.Classes) > 0 ||
         len(section.arch.ReExports) > 0 || len(section.arch.Weak) > 0 ||
         len(section.arch.Ivars) > 0 {
+
+        sort.Sort(ByLength(section.arch.ReExports))
+        sort.Strings(section.arch.Weak)
+        sort.Strings(section.arch.Symbols)
+        sort.Strings(section.arch.Classes)
+        sort.Strings(section.arch.Ivars)
+        sort.Strings(section.arch_n)
         tbd_sections = append(tbd_sections, section)
       }
     }
   }
 
+  count := func(s1, s2 *tbd_section) (bool) {
+    return len(s1.arch_n) < len(s2.arch_n)
+  }
+
+  By(count).Sort(tbd_sections)
   for _, v := range tbd_sections {
     buffer.WriteString("  - archs:            [ ")
 
@@ -225,7 +274,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     write_section(&buffer, v.arch.Ivars, "    objc-ivars:       [ ")
   }
 
-  buffer.WriteString("...")
+  buffer.WriteString("...\n")
 
   return buffer
 }

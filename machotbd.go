@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 17:31:09
 * @Last Modified by:   Mustafa
-* @Last Modified time: 2016-04-02 18:52:42
+* @Last Modified time: 2016-04-04 04:50:35
 */
 
 package main
@@ -17,17 +17,17 @@ import (
   "encoding/binary"
   "bytes"
   "fmt"
-  "sort"
   "flag"
 )
 
 const (
-  arm64 macho.Cpu = 16777228
+  arm64 macho.Cpu = 0x100000C
 
   // From <mach-o/nlist.h>
   N_TYPE uint8 = 0x0e
   N_SECT uint8 = 0xe
   N_EXT uint8 = 0x01
+  N_WEAK_REF uint16 = 0x0040
   LoadDylibIdCmd = 0xd
   fileHeaderSize32 = 7 * 4
   fileHeaderSize64 = 8 * 4
@@ -41,18 +41,6 @@ type DylibIdCmd_ struct {
   Time uint32
   CurrentVersion uint32
   CompatVersion uint32
-}
-
-type ByLength []string
-
-func (s ByLength) Len() int {
-  return len(s)
-}
-func (s ByLength) Swap(i, j int) {
-  s[i], s[j] = s[j], s[i]
-}
-func (s ByLength) Less(i, j int) bool {
-  return len(s[i]) > len(s[j])
 }
 
 
@@ -117,20 +105,34 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
   for _, v := range symtab.Syms {
     if v.Type & N_TYPE == N_SECT && v.Type & N_EXT == N_EXT {
       if v.Name != "" {
-        if strings.Contains(v.Name, "_OBJC_CLASS") {
+        if strings.Contains(v.Name, "$ld$") {
+          real_name := fmt.Sprintf("'%s'", v.Name)
+          if strings.Contains(v.Name, "_OBJC_CLASS") {
+            real_classes = append(real_classes, real_name)
+          } else if strings.Contains(v.Name, "_OBJC_IVAR") {
+            real_ivars = append(real_ivars, real_name)
+          } else if strings.Contains(v.Name, "_OBJC_METACLASS") {
+          } else if cput == "i386" && strings.Contains(v.Name, ".objc_class_name") {
+            real_classes = append(real_classes, real_name)
+          } else if v.Desc & N_WEAK_REF == N_WEAK_REF {
+            real_weak = append(real_weak, real_name)
+          } else {
+            real_symbols = append(real_symbols, real_name)
+          }
+        } else if strings.Contains(v.Name, "_OBJC_CLASS") {
           real_name := strings.Replace(v.Name, "_OBJC_CLASS_$", "", -1)
           real_classes = append(real_classes, real_name)
         } else if strings.Contains(v.Name, "_OBJC_IVAR") {
           real_name := strings.Replace(v.Name, "_OBJC_IVAR_$", "", -1)
           real_ivars = append(real_ivars, real_name)
         } else if strings.Contains(v.Name, "_OBJC_METACLASS") {
+        } else if cput == "i386" && strings.Contains(v.Name, ".objc_class_name") {
+          real_name := strings.Replace(v.Name, ".objc_class_name", "", -1)
+          real_classes = append(real_classes, real_name)
+        } else if v.Desc & N_WEAK_REF == N_WEAK_REF {
+          real_weak = append(real_weak, v.Name)
         } else {
-          // Sort weak and strong symbols
-          if v.Type & N_SECT == N_SECT {
-            real_symbols = append(real_symbols, v.Name)
-          }/* else if v.Type & N_SECT != N_SECT {
-            real_weak = append(real_weak, v.Name)
-          }*/ // Disable weak symbol finding until I find a better solution
+          real_symbols = append(real_symbols, v.Name)
         }
       }
     }
@@ -175,16 +177,6 @@ func parse_macho(f *macho.File, stdout *log.Logger, stderr *log.Logger) (tbd.Arc
       break
     }
   }
-
-  if len(real_reexports) > 0 {
-    sort.Sort(ByLength(real_reexports))
-  }
-
-  sort.Strings(real_weak)
-  sort.Strings(real_symbols)
-  sort.Strings(real_classes)
-  sort.Strings(real_ivars)
-
 
   _syms = tbd.Arch{Name: cput, Symbols: real_symbols, Classes: real_classes, Ivars: real_ivars, Weak: real_weak, ReExports: real_reexports}
   return _syms, []string{version, path, compatibility_version}, nil
