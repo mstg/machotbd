@@ -2,7 +2,7 @@
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
 * @Last Modified by:   Mustafa
-* @Last Modified time: 2016-04-04 05:01:50
+* @Last Modified time: 2016-04-06 18:53:02
 */
 
 package tbd
@@ -71,6 +71,8 @@ func (s *sectionSorter) Less(i, j int) bool {
   return s.by(&s.sections[i], &s.sections[j])
 }
 
+
+
 func acontains(s []string, a string) (bool, int) {
   for i, v := range s {
     if v == a {
@@ -113,8 +115,16 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
   buffer.WriteString("---\n")
   buffer.WriteString("archs:           [ ")
 
-  for i, v := range list.Archs {
-    buffer.WriteString(v.Name)
+  var archs_ []string
+
+  for _, v := range list.Archs {
+    archs_ = append(archs_, v.Name)
+  }
+
+  sort.Strings(archs_)
+
+  for i, v := range archs_ {
+    buffer.WriteString(v)
     if len(list.Archs)-1 != i {
       buffer.WriteString(", ")
     } else {
