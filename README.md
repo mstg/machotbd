@@ -2,9 +2,11 @@
 mach-o to tbd
 
 # Thanks to
-@uroboro to help me find possible fields and styling advice
+@uroboro for helping me find possible fields and styling advice
 
 @c0deh4cker for advice on symbol parsing
+
+@inoahdev for the idea and helping me find install-name and version
 
 # Usage
 ```
