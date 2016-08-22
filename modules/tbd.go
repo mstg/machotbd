@@ -1,9 +1,9 @@
 /*
 * @Author: mustafa
 * @Date:   2016-03-29 18:46:24
-* @Last Modified by:   Mustafa
-* @Last Modified time: 2016-04-06 18:53:02
-*/
+* @Last Modified by:   mstg
+* @Last Modified time: 2016-08-22 17:43:48
+ */
 
 package tbd
 
@@ -14,25 +14,25 @@ import (
 )
 
 type Arch struct {
-  Name string
-  Symbols []string
-  Classes []string
-  Ivars []string
-  Weak []string
+  Name      string
+  Symbols   []string
+  Classes   []string
+  Ivars     []string
+  Weak      []string
   ReExports []string
 }
 
 type Tbd_list struct {
   Install_name string
-  Version string
-  CompVersion string
-  Platform string
-  Archs []Arch
+  Version      string
+  CompVersion  string
+  Platform     string
+  Archs        []Arch
 }
 
 type tbd_section struct {
   arch_n []string
-  arch Arch
+  arch   Arch
 }
 
 type ByLength []string
@@ -49,7 +49,7 @@ func (s ByLength) Less(i, j int) bool {
 
 type sectionSorter struct {
   sections []tbd_section
-  by func(p1, p2 *tbd_section) bool
+  by       func(p1, p2 *tbd_section) bool
 }
 
 type By func(p1, p2 *tbd_section) bool
@@ -71,8 +71,6 @@ func (s *sectionSorter) Less(i, j int) bool {
   return s.by(&s.sections[i], &s.sections[j])
 }
 
-
-
 func acontains(s []string, a string) (bool, int) {
   for i, v := range s {
     if v == a {
@@ -83,7 +81,7 @@ func acontains(s []string, a string) (bool, int) {
   return false, 0
 }
 
-func write_section (buffer *bytes.Buffer, sect []string, sect_def string) {
+func write_section(buffer *bytes.Buffer, sect []string, sect_def string) {
   if len(sect) > 0 {
     buffer.WriteString(sect_def)
     amount := 0
@@ -110,7 +108,7 @@ func write_section (buffer *bytes.Buffer, sect []string, sect_def string) {
   }
 }
 
-func Tbd_form(list Tbd_list) (bytes.Buffer) {
+func Tbd_form(list Tbd_list) bytes.Buffer {
   var buffer bytes.Buffer
   buffer.WriteString("---\n")
   buffer.WriteString("archs:           [ ")
@@ -204,41 +202,41 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
             }
           }
         }
+      }
 
-        for _, k := range list.Archs[i].Weak {
-          for b, l := range list.Archs {
-            cont, _a := acontains(l.Weak, k)
-            cont2, _ := acontains(section.arch_n, l.Name)
-            if cont {
-              __l, _ := acontains(section.arch.Weak, k)
-              if !__l {
-                section.arch.Weak = append(section.arch.Weak, k)
-              }
+      for _, k := range list.Archs[i].Weak {
+        for b, l := range list.Archs {
+          cont, _a := acontains(l.Weak, k)
+          cont2, _ := acontains(section.arch_n, l.Name)
+          if cont {
+            __l, _ := acontains(section.arch.Weak, k)
+            if !__l {
+              section.arch.Weak = append(section.arch.Weak, k)
+            }
 
-              list.Archs[b].Weak = append(list.Archs[b].Weak[:_a], list.Archs[b].Weak[_a+1:]...)
+            list.Archs[b].Weak = append(list.Archs[b].Weak[:_a], list.Archs[b].Weak[_a+1:]...)
 
-              if !cont2 {
-                section.arch_n = append(section.arch_n, l.Name)
-              }
+            if !cont2 {
+              section.arch_n = append(section.arch_n, l.Name)
             }
           }
         }
+      }
 
-        for _, k := range list.Archs[i].Ivars {
-          for b, l := range list.Archs {
-            cont, _a := acontains(l.Ivars, k)
-            cont2, _ := acontains(section.arch_n, l.Name)
-            if cont {
-              __l, _ := acontains(section.arch.Ivars, k)
-              if !__l {
-                section.arch.Ivars = append(section.arch.Ivars, k)
-              }
+      for _, k := range list.Archs[i].Ivars {
+        for b, l := range list.Archs {
+          cont, _a := acontains(l.Ivars, k)
+          cont2, _ := acontains(section.arch_n, l.Name)
+          if cont {
+            __l, _ := acontains(section.arch.Ivars, k)
+            if !__l {
+              section.arch.Ivars = append(section.arch.Ivars, k)
+            }
 
-              list.Archs[b].Ivars = append(list.Archs[b].Ivars[:_a], list.Archs[b].Ivars[_a+1:]...)
+            list.Archs[b].Ivars = append(list.Archs[b].Ivars[:_a], list.Archs[b].Ivars[_a+1:]...)
 
-              if !cont2 {
-                section.arch_n = append(section.arch_n, l.Name)
-              }
+            if !cont2 {
+              section.arch_n = append(section.arch_n, l.Name)
             }
           }
         }
@@ -261,7 +259,7 @@ func Tbd_form(list Tbd_list) (bytes.Buffer) {
     }
   }
 
-  count := func(s1, s2 *tbd_section) (bool) {
+  count := func(s1, s2 *tbd_section) bool {
     return len(s1.arch_n) < len(s2.arch_n)
   }
 
