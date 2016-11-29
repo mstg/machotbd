@@ -1,4 +1,4 @@
-# machotbd
+# machotbd [![Go Report Card](https://goreportcard.com/badge/github.com/mstg/machotbd)](https://goreportcard.com/report/github.com/mstg/machotbd)
 mach-o to tbd
 
 # Thanks to
