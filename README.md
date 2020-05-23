@@ -1,5 +1,5 @@
-# machotbd [![Go Report Card](https://goreportcard.com/badge/github.com/mstg/machotbd)](https://goreportcard.com/report/github.com/mstg/machotbd)
-mach-o to tbd
+# machotbd [NOT MAINTAINED] [![Go Report Card](https://goreportcard.com/badge/github.com/mstg/machotbd)](https://goreportcard.com/report/github.com/mstg/machotbd)
+This package is not maintained. Use [inoahdev/tbd](https://github.com/inoahdev/tbd)
 
 # Thanks to
 @uroboro for helping me find possible fields and styling advice
